@@ -24,7 +24,8 @@ interface HotspotProps {
 
 /**
  * Wraps any model (primitive today, .glb later) with hover + click behaviour.
- * Labels are always visible on the home view so touch users can see what is tappable.
+ * On a mouse the label appears on hover; on touch screens it is always visible
+ * so people can see what is tappable (see .hotspot-pill in globals.css).
  */
 export function Hotspot({ id, onSelect, label, position, rotation, labelHeight = 1, children }: HotspotProps) {
   const ref = useRef<Group>(null);
@@ -77,15 +78,15 @@ export function Hotspot({ id, onSelect, label, position, rotation, labelHeight =
           type="button"
           tabIndex={interactive ? 0 : -1}
           aria-label={label}
+          data-active={active}
+          data-interactive={interactive}
           onClick={(e) => {
             e.stopPropagation();
             select();
           }}
           onPointerEnter={() => setHovered(true)}
           onPointerLeave={() => setHovered(false)}
-          className={`glass whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition duration-300 sm:text-sm ${
-            interactive ? "pointer-events-auto opacity-90" : "pointer-events-none opacity-0"
-          } ${active ? "scale-110 opacity-100" : "scale-100"}`}
+          className="hotspot-pill glass whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium sm:text-sm"
         >
           {label}
         </button>

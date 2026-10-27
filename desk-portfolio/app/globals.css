@@ -45,6 +45,78 @@ body {
   box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.4);
 }
 
+/* ---------- object labels ---------- */
+
+/* touch screens: always visible and tappable */
+.hotspot-pill {
+  opacity: 0.9;
+  pointer-events: auto;
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
+}
+.hotspot-pill[data-active="true"] {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* mouse: only show the label while hovering the object */
+@media (hover: hover) and (pointer: fine) {
+  .hotspot-pill {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hotspot-pill[data-active="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* hide every label while a view is open */
+.hotspot-pill[data-interactive="false"] {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ---------- monitor desktop ---------- */
+
+.os-bar {
+  width: 0;
+  animation: os-bar 1.6s ease-in-out forwards;
+}
+@keyframes os-bar {
+  to {
+    width: 100%;
+  }
+}
+
+.os-line {
+  opacity: 0;
+  animation: os-line 0.4s ease-out forwards;
+}
+@keyframes os-line {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.os-fade-in {
+  animation: os-fade-in 0.5s ease-out;
+}
+@keyframes os-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ---------- sky behind the 3D scene ---------- */
 
 .sky {
@@ -195,7 +267,16 @@ body {
   * {
     transition-duration: 0.01ms !important;
   }
-  .sky-cloud {
+  .sky-cloud,
+  .os-bar,
+  .os-line,
+  .os-fade-in {
     animation: none;
+  }
+  .os-bar {
+    width: 100%;
+  }
+  .os-line {
+    opacity: 1;
   }
 }

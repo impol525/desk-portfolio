@@ -8,6 +8,7 @@ import { useStore } from "@/store/useStore";
 import { CameraRig } from "./CameraRig";
 import { Hotspot } from "./Hotspot";
 import { LightShafts } from "./LightShafts";
+import { MonitorScreen } from "./MonitorScreen";
 import { DriftClouds, Plinth } from "./Plinth";
 import { Room } from "./Room";
 import { BookStack, Desk, Keyboard, Lamp, Monitor, Mouse, Mug, Notebook, Phone, Plant, SpinChair } from "./models";
@@ -98,8 +99,12 @@ export default function Scene() {
       <Keyboard position={[0, 1.03, 0.4]} />
       <Mouse position={[0.85, 1.03, 0.42]} rotation={[0, 0.15, 0]} />
       <Mug position={[-0.95, 1, 0.05]} />
-
       <Plant position={[3.1, 0, -1.0]} />
+
+      {/* decoration only: these are not clickable */}
+      <Notebook position={[-1.3, 1, 0.5]} rotation={[0, 0.3, 0]} />
+      <BookStack position={[-1.6, 1, -0.6]} />
+      <Phone position={[1.5, 1, 0.5]} rotation={[0, -0.4, 0]} />
 
       <ContactShadows position={[0.3, 0.02, 0.9]} opacity={0.4} scale={9} blur={2.5} far={3} frames={1} />
 
@@ -124,28 +129,21 @@ export default function Scene() {
         color={dark ? "#bcd0ff" : "#ffd9a0"}
       />
 
+      {/* the desktop UI that appears on the monitor when it is opened */}
+      <MonitorScreen />
+
+      {/* the monitor is the one object that opens the portfolio */}
+      <Hotspot id="projects" label="Open the monitor" position={[0, 1, -0.5]} labelHeight={1.5}>
+        <Monitor />
+      </Hotspot>
+
+      {/* playful extras */}
       <Hotspot label="Desk lamp" position={[1.65, 1, -0.7]} labelHeight={1.05} onSelect={toggleLamp}>
         <Lamp />
       </Hotspot>
 
       <Hotspot label="Spin the chair" position={[0.9, 0, 1.75]} rotation={[0, Math.PI + 0.55, 0]} labelHeight={1.35} onSelect={kickChair}>
         <SpinChair />
-      </Hotspot>
-
-      <Hotspot id="projects" label="Projects" position={[0, 1, -0.5]} labelHeight={1.5}>
-        <Monitor />
-      </Hotspot>
-
-      <Hotspot id="about" label="About me" position={[-1.3, 1, 0.5]} rotation={[0, 0.3, 0]} labelHeight={0.5}>
-        <Notebook />
-      </Hotspot>
-
-      <Hotspot id="stack" label="Tech stack" position={[-1.6, 1, -0.6]} labelHeight={0.6}>
-        <BookStack />
-      </Hotspot>
-
-      <Hotspot id="contact" label="Contact" position={[1.5, 1, 0.5]} rotation={[0, -0.4, 0]} labelHeight={0.5}>
-        <Phone />
       </Hotspot>
     </Canvas>
   );

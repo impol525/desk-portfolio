@@ -1,18 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { portfolio } from "@/data/portfolio";
+import { portfolio, type Project } from "@/data/portfolio";
 import { playSfx } from "@/lib/sound";
 import { useStore, type ViewId } from "@/store/useStore";
 
-const TITLES: Record<Exclude<ViewId, "home">, string> = {
+type SheetView = Exclude<ViewId, "home">;
+
+const TITLES: Record<SheetView, string> = {
   projects: "Projects",
   about: "About me",
   stack: "Tech stack",
   contact: "Contact",
 };
+
+const TABS: { id: SheetView; label: string }[] = [
+  { id: "projects", label: "Projects" },
+  { id: "about", label: "About" },
+  { id: "stack", label: "Skills" },
+  { id: "contact", label: "Contact" },
+];
 
 function Avatar() {
   const [failed, setFailed] = useState(false);
@@ -143,31 +152,185 @@ function ContactContent() {
   );
 }
 
-function Content({ view }: { view: Exclude<ViewId, "home"> }) {
-  switch (view) {
-    case "projects":
-      return (
-        <ul className="space-y-3">
-          {portfolio.projects.map((p) => (
-            <li key={p.title} className="rounded-2xl bg-[var(--chip)] p-4">
-              <h3 className="font-semibold">{p.title}</h3>
-              <p className="mt-1 text-sm text-[var(--muted)]">{p.description}</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {p.tags.map((t) => (
-                  <span key={t} className="rounded-full border border-[var(--glass-border)] px-2.5 py-0.5 text-xs">
-                    {t}
-                  </span>
-                ))}
-              </div>
-              {p.href && (
-                <a href={p.href} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm underline underline-offset-4">
-                  View project
+/** Screenshot gallery: swipe or use the arrows and dots. */
+function Gallery({ project }: { project: Project }) {
+  const images = project.images ?? [];
+  const [index, setIndex] = useState(0);
+  const [broken, setBroken] = useState<Record<string, boolean>>({});
+  const touchX = useRef<number | null>(null);
+  const current = images[index];
+
+  const go = (step: number) => {
+    if (images.length < 2) return;
+    playSfx("click");
+    setIndex((i) => (i + step + images.length) % images.length);
+  };
+
+  return (
+    <div>
+      <div
+        className="relative aspect-video overflow-hidden rounded-2xl bg-[var(--chip)]"
+        onTouchStart={(e) => {
+          touchX.current = e.touches[0].clientX;
+        }}
+        onTouchEnd={(e) => {
+          if (touchX.current === null) return;
+          const dx = e.changedTouches[0].clientX - touchX.current;
+          touchX.current = null;
+          if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+        }}
+      >
+        {current && !broken[current] ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={current}
+            alt={`${project.title} screenshot ${index + 1}`}
+            onError={() => setBroken((b) => ({ ...b, [current]: true }))}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-xs text-[var(--muted)]">
+            Screenshots coming soon
+          </div>
+        )}
+        {images.length > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous screenshot"
+              onClick={() => go(-1)}
+              className="absolute left-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
+            >
+              {"\u2039"}
+            </button>
+            <button
+              type="button"
+              aria-label="Next screenshot"
+              onClick={() => go(1)}
+              className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
+            >
+              {"\u203A"}
+            </button>
+          </>
+        )}
+      </div>
+      {images.length > 1 && (
+        <div className="mt-2 flex justify-center gap-1.5">
+          {images.map((src, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={`Screenshot ${i + 1}`}
+              onClick={() => setIndex(i)}
+              className={`size-2 rounded-full ${i === index ? "bg-[var(--fg)]" : "bg-[var(--chip)]"}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Project list. Tapping a project opens its detail page with the gallery. */
+function ProjectsContent() {
+  const [selected, setSelected] = useState<number | null>(null);
+  const project = selected === null ? null : portfolio.projects[selected];
+
+  if (project) {
+    return (
+      <div className="space-y-4">
+        <button
+          type="button"
+          onClick={() => {
+            playSfx("back");
+            setSelected(null);
+          }}
+          className="text-sm font-medium underline underline-offset-4"
+        >
+          {"\u2039"} All projects
+        </button>
+
+        <Gallery project={project} />
+
+        <div className="space-y-3 text-sm">
+          <h3 className="text-lg font-semibold">{project.title}</h3>
+          <p className="leading-relaxed text-[var(--muted)]">{project.description}</p>
+          {project.details && project.details.length > 0 && (
+            <ul className="list-disc space-y-1 pl-5 text-[var(--muted)]">
+              {project.details.map((d) => (
+                <li key={d}>{d}</li>
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-wrap gap-1.5">
+            {project.tags.map((t) => (
+              <span key={t} className="rounded-full border border-[var(--glass-border)] px-2.5 py-0.5 text-xs">
+                {t}
+              </span>
+            ))}
+          </div>
+          {(project.href || project.repo) && (
+            <div className="flex gap-2">
+              {project.href && (
+                <a
+                  href={project.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full bg-[var(--fg)] px-4 py-2 text-xs font-semibold text-[var(--bg)]"
+                >
+                  Live site
                 </a>
               )}
-            </li>
-          ))}
-        </ul>
-      );
+              {project.repo && (
+                <a
+                  href={project.repo}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full border border-[var(--glass-border)] px-4 py-2 text-xs"
+                >
+                  Source code
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="space-y-3">
+      {portfolio.projects.map((p, i) => (
+        <li key={p.title}>
+          <button
+            type="button"
+            onClick={() => {
+              playSfx("click");
+              setSelected(i);
+            }}
+            className="w-full rounded-2xl bg-[var(--chip)] p-4 text-left"
+          >
+            <h3 className="font-semibold">{p.title}</h3>
+            <p className="mt-1 text-sm text-[var(--muted)]">{p.description}</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {p.tags.map((t) => (
+                <span key={t} className="rounded-full border border-[var(--glass-border)] px-2.5 py-0.5 text-xs">
+                  {t}
+                </span>
+              ))}
+            </div>
+            <p className="mt-3 text-xs font-medium">View details {"\u203A"}</p>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Content({ view }: { view: SheetView }) {
+  switch (view) {
+    case "projects":
+      return <ProjectsContent />;
     case "about":
       return <AboutContent />;
     case "stack":
@@ -192,20 +355,43 @@ function Content({ view }: { view: Exclude<ViewId, "home"> }) {
   }
 }
 
+/** Phones and tall screens: a bottom card with tabs. Wide screens use the 3D monitor instead. */
 export function Panel() {
   const view = useStore((s) => s.view);
+  const setView = useStore((s) => s.setView);
+  const monitorMode = useStore((s) => s.monitorMode);
+
+  if (monitorMode) return null;
 
   return (
     <div className="pointer-events-none absolute inset-x-4 bottom-20 md:inset-x-auto md:bottom-auto md:right-10 md:top-1/2 md:w-[26rem] md:-translate-y-1/2">
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {view !== "home" && (
           <motion.aside
-            key={view}
+            key="sheet"
             initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1, transition: { delay: 0.5, duration: 0.45, ease: "easeOut" } }}
             exit={{ opacity: 0, y: 12, transition: { duration: 0.18 } }}
             className="glass pointer-events-auto max-h-[46vh] overflow-y-auto rounded-3xl p-6 md:max-h-[60vh]"
           >
+            <div className="mb-4 flex gap-1.5 overflow-x-auto [scrollbar-width:none]">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-current={view === t.id ? "page" : undefined}
+                  onClick={() => {
+                    playSfx("click");
+                    setView(t.id);
+                  }}
+                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
+                    view === t.id ? "bg-[var(--fg)] text-[var(--bg)]" : "bg-[var(--chip)]"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
             <h2 className="mb-4 text-2xl font-semibold tracking-tight">{TITLES[view]}</h2>
             <Content view={view} />
           </motion.aside>

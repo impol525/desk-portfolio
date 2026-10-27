@@ -21,6 +21,12 @@ export function Overlay() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      // do not steal keys while someone is typing (for example in the monitor terminal)
+      const el = e.target as HTMLElement | null;
+      const typing = !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+      if (typing && e.key !== "Escape") return;
+
       const s = useStore.getState();
       const open = (id: ViewId) => {
         playSfx("click");
@@ -142,7 +148,7 @@ export function Overlay() {
       <Panel />
 
       {/* first-visit hint */}
-      <div className="absolute inset-x-0 bottom-6 flex justify-center px-24">
+      <div className="absolute inset-x-0 bottom-20 flex justify-center px-6 sm:bottom-6 sm:px-24">
         <AnimatePresence>
           {view === "home" && !hintSeen && (
             <motion.p
@@ -151,7 +157,12 @@ export function Overlay() {
               exit={{ opacity: 0 }}
               className="glass rounded-full px-4 py-2 text-center text-xs sm:text-sm"
             >
-              Click the monitor, notebook, books or phone to explore. The lamp, window and chair react too.
+              <span className="[@media(hover:none)]:hidden">
+                Click the monitor to open the portfolio. The lamp, window and chair react too.
+              </span>
+              <span className="hidden [@media(hover:none)]:inline">
+                Tap the monitor to open the portfolio. The lamp, window and chair react too.
+              </span>
             </motion.p>
           )}
         </AnimatePresence>

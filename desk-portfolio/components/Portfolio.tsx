@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useStore } from "@/store/useStore";
 import { Overlay } from "./ui/Overlay";
@@ -9,6 +10,16 @@ const Scene = dynamic(() => import("./canvas/Scene"), { ssr: false });
 
 export default function Portfolio() {
   const theme = useStore((s) => s.theme);
+  const setCompact = useStore((s) => s.setCompact);
+
+  // portrait phones and tall screens get the compact monitor desktop
+  useEffect(() => {
+    const mq = window.matchMedia("(max-aspect-ratio: 5/4), (max-width: 699px)");
+    const update = () => setCompact(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [setCompact]);
 
   return (
     <main data-theme={theme} className="relative h-dvh w-screen overflow-hidden bg-[var(--bg)]">
